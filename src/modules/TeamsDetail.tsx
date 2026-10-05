@@ -38,7 +38,8 @@ export const TeamsDetail: React.FC = () => {
     tasks,
     setActiveTab,
     openExplainabilityModal,
-    recommendations
+    recommendations,
+    openEmployeeProfile
   } = useWorkforce();
 
   const currentTeam = useMemo(() => {
@@ -276,10 +277,17 @@ export const TeamsDetail: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {teamEmployees.map(emp => (
-            <div key={emp.id} className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/70 hover:bg-slate-50 transition-colors">
+            <div
+              key={emp.id}
+              onClick={() => openEmployeeProfile(emp.id === 'emp-03' ? 'EMP-1042' : emp.id)}
+              className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-blue-50/60 hover:border-blue-300 transition-all cursor-pointer group"
+            >
               <div className="flex items-start justify-between mb-1.5">
                 <div>
-                  <span className="font-bold text-xs text-slate-900 block">{emp.name}</span>
+                  <span className="font-bold text-xs text-slate-900 group-hover:text-blue-600 transition flex items-center gap-1">
+                    {emp.name}
+                    <ChevronRight className="w-3.5 h-3.5 text-blue-500 group-hover:translate-x-0.5 transition" />
+                  </span>
                   <span className="text-[11px] text-slate-500">{emp.role}</span>
                 </div>
                 <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
@@ -306,6 +314,11 @@ export const TeamsDetail: React.FC = () => {
                     {emp.engagementIndex} / 100
                   </span>
                 </div>
+              </div>
+
+              <div className="mt-2.5 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[10px] text-blue-600 font-bold">
+                <span>Employee 360° Profile</span>
+                <span className="group-hover:translate-x-0.5 transition">➔</span>
               </div>
             </div>
           ))}

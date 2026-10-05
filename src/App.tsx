@@ -17,11 +17,21 @@ import { Recommendations } from './modules/Recommendations';
 import { SimulationLab } from './modules/SimulationLab';
 import { Reports } from './modules/Reports';
 import { Settings } from './modules/Settings';
+import { EmployeeProfile360 } from './modules/EmployeeProfile360';
 
 const MainContent: React.FC = () => {
-  const { activeTab } = useWorkforce();
+  const { activeTab, selectedEmployeeId, closeEmployeeProfile } = useWorkforce();
 
   const renderModule = () => {
+    if (selectedEmployeeId) {
+      return (
+        <EmployeeProfile360
+          employeeId={selectedEmployeeId}
+          onBack={closeEmployeeProfile}
+        />
+      );
+    }
+
     switch (activeTab) {
       case 'overview':
         return <Overview />;

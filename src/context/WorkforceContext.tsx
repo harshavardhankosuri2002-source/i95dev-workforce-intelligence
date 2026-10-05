@@ -58,6 +58,9 @@ interface WorkforceContextType {
   closeExplainabilityModal: () => void;
   toast: { message: string; type: 'success' | 'info' | 'warning' } | null;
   showToast: (message: string, type?: 'success' | 'info' | 'warning') => void;
+  selectedEmployeeId: string | null;
+  openEmployeeProfile: (employeeId: string) => void;
+  closeEmployeeProfile: () => void;
   approveRecommendation: (id: string) => void;
   dismissRecommendation: (id: string) => void;
   applySimulationScenario: (scenarioId: 'A' | 'B' | 'C' | 'D' | 'E') => void;
@@ -85,6 +88,15 @@ export const WorkforceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [tasks, setTasks] = useState<Task[]>(reassignableTasks);
   const [weights, setWeights] = useState<ConfigurableWeights>(defaultWeights);
   const [isSimulatedActive, setIsSimulatedActive] = useState<boolean>(false);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+
+  const openEmployeeProfile = (empId: string) => {
+    setSelectedEmployeeId(empId);
+  };
+
+  const closeEmployeeProfile = () => {
+    setSelectedEmployeeId(null);
+  };
 
   // Modals
   const [isRootCauseModalOpen, setIsRootCauseModalOpen] = useState<boolean>(false);
@@ -338,6 +350,9 @@ export const WorkforceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         customMoveTasks,
         resetToBaseline,
         isSimulatedActive,
+        selectedEmployeeId,
+        openEmployeeProfile,
+        closeEmployeeProfile,
         auditLog,
         navigateToTeam
       }}

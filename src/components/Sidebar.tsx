@@ -16,7 +16,7 @@ import {
 import { useWorkforce } from '../context/WorkforceContext';
 
 export const Sidebar: React.FC = () => {
-  const { activeTab, setActiveTab, recommendations, risks, isSimulatedActive } = useWorkforce();
+  const { activeTab, setActiveTab, recommendations, risks, isSimulatedActive, closeEmployeeProfile } = useWorkforce();
 
   const pendingRecsCount = recommendations.filter(r => r.status === 'pending').length;
 
@@ -60,7 +60,10 @@ export const Sidebar: React.FC = () => {
           return (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => {
+                setActiveTab(item.id);
+                closeEmployeeProfile();
+              }}
               className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition-all group ${
                 isActive
                   ? 'bg-brand-600 text-white font-semibold shadow-sm shadow-brand-700/50'

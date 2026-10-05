@@ -12,20 +12,24 @@ import {
   TrendingDown,
   TrendingUp,
   Activity,
-  Layers
+  Layers,
+  ChevronRight,
+  ExternalLink,
+  Sparkles,
+  AlertTriangle,
+  CheckCircle2
 } from 'lucide-react';
 import { useWorkforce } from '../context/WorkforceContext';
 import { Employee, TeamId } from '../types';
 
 export const WorkforceAnalytics: React.FC = () => {
-  const { employees, teams, navigateToTeam, showToast } = useWorkforce();
+  const { employees, teams, navigateToTeam, openEmployeeProfile, showToast } = useWorkforce();
 
   // Filters
   const [selectedDept, setSelectedDept] = useState<string>('all');
   const [selectedTeam, setSelectedTeam] = useState<string>('all');
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [authorizedView, setAuthorizedView] = useState<boolean>(true);
 
   const departments = useMemo(() => {
     return Array.from(new Set(employees.map(e => e.department)));
@@ -35,11 +39,88 @@ export const WorkforceAnalytics: React.FC = () => {
     return Array.from(new Set(employees.map(e => e.location)));
   }, [employees]);
 
+  // Merge sample employees with key showcase data
+  const enrichedEmployees = useMemo(() => {
+    return [
+      {
+        id: 'EMP-1042',
+        name: 'Arjun Rao',
+        role: 'Senior Developer',
+        department: 'Digital Commerce',
+        teamId: 'integration' as TeamId,
+        teamName: 'Integration',
+        project: 'Project Alpha',
+        workload: 112,
+        capacity: 112,
+        productivity: 84,
+        quality: 91,
+        sla: 94,
+        overtime: '+18%',
+        engagement: 72,
+        status: 'At Risk',
+        statusColor: 'text-amber-700 bg-amber-50 border-amber-300'
+      },
+      {
+        id: 'EMP-1088',
+        name: 'Priya Sharma',
+        role: 'QA Analyst',
+        department: 'Quality Assurance',
+        teamId: 'qa' as TeamId,
+        teamName: 'QA',
+        project: 'Project Alpha & Beta',
+        workload: 82,
+        capacity: 82,
+        productivity: 93,
+        quality: 96,
+        sla: 98,
+        overtime: '+3%',
+        engagement: 84,
+        status: 'Healthy',
+        statusColor: 'text-emerald-700 bg-emerald-50 border-emerald-300'
+      },
+      {
+        id: 'EMP-1095',
+        name: 'Rahul Mehta',
+        role: 'Integration Engineer',
+        department: 'Digital Commerce',
+        teamId: 'integration' as TeamId,
+        teamName: 'Integration',
+        project: 'ERP Sync Connector',
+        workload: 104,
+        capacity: 104,
+        productivity: 78,
+        quality: 87,
+        sla: 89,
+        overtime: '+14%',
+        engagement: 68,
+        status: 'At Risk',
+        statusColor: 'text-amber-700 bg-amber-50 border-amber-300'
+      },
+      ...employees.map(e => ({
+        id: e.id,
+        name: e.name,
+        role: e.role,
+        department: e.department,
+        teamId: e.teamId,
+        teamName: e.teamId === 'engineering' ? 'Engineering' : e.teamId === 'integration' ? 'Integration' : e.teamId === 'qa' ? 'QA' : e.teamId === 'support' ? 'Support' : 'Solutions',
+        project: e.teamId === 'engineering' ? 'Project Alpha' : e.teamId === 'integration' ? 'Project Beta' : 'Platform Support',
+        workload: e.utilizationPct,
+        capacity: e.utilizationPct,
+        productivity: e.utilizationPct > 115 ? 81 : 89,
+        quality: e.qualityRating,
+        sla: e.utilizationPct > 115 ? 88 : 95,
+        overtime: e.overtimeHoursWeekly > 0 ? `+${Math.round((e.overtimeHoursWeekly / 40) * 100)}%` : '0%',
+        engagement: e.engagementIndex,
+        status: e.utilizationPct > 115 ? 'At Risk' : e.utilizationPct > 100 ? 'Monitor' : 'Healthy',
+        statusColor: e.utilizationPct > 115 ? 'text-amber-700 bg-amber-50 border-amber-300' : e.utilizationPct > 100 ? 'text-amber-600 bg-amber-50 border-amber-200' : 'text-emerald-700 bg-emerald-50 border-emerald-300'
+      }))
+    ];
+  }, [employees]);
+
   const filteredEmployees = useMemo(() => {
-    return employees.filter(e => {
+    return enrichedEmployees.filter(e => {
       if (selectedDept !== 'all' && e.department !== selectedDept) return false;
       if (selectedTeam !== 'all' && e.teamId !== selectedTeam) return false;
-      if (selectedLocation !== 'all' && e.location !== selectedLocation) return false;
       if (searchQuery.trim() !== '') {
         const query = searchQuery.toLowerCase();
         return (
@@ -50,242 +131,263 @@ export const WorkforceAnalytics: React.FC = () => {
       }
       return true;
     });
-  }, [employees, selectedDept, selectedTeam, selectedLocation, searchQuery]);
-
-  // Aggregate Metrics for Current Filter
-  const stats = useMemo(() => {
-    if (filteredEmployees.length === 0) return { avgUtil: 0, avgHours: 0, avgOt: 0, avgQuality: 0, avgEng: 0 };
-    const avgUtil = Math.round(filteredEmployees.reduce((acc, e) => acc + e.utilizationPct, 0) / filteredEmployees.length);
-    const avgHours = Math.round(filteredEmployees.reduce((acc, e) => acc + e.assignedHoursWeekly, 0) / filteredEmployees.length);
-    const avgOt = (filteredEmployees.reduce((acc, e) => acc + e.overtimeHoursWeekly, 0) / filteredEmployees.length).toFixed(1);
-    const avgQuality = Math.round(filteredEmployees.reduce((acc, e) => acc + e.qualityRating, 0) / filteredEmployees.length);
-    const avgEng = Math.round(filteredEmployees.reduce((acc, e) => acc + e.engagementIndex, 0) / filteredEmployees.length);
-    return { avgUtil, avgHours, avgOt, avgQuality, avgEng };
-  }, [filteredEmployees]);
-
-  const handleExport = () => {
-    showToast('Workforce capacity dataset exported to CSV.', 'success');
-  };
+  }, [enrichedEmployees, selectedDept, selectedTeam, searchQuery]);
 
   return (
     <div className="space-y-6">
-      {/* Privacy Safeguard Alert */}
-      <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/80 text-blue-900 flex items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <ShieldCheck className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
-          <div className="text-xs">
-            <span className="font-bold text-slate-900 block text-sm">
-              Authorized Management & Operations Planning View
+      {/* Top Header & Context */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold text-slate-900">Workforce & Employee 360° Directory</h2>
+            <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
+              {filteredEmployees.length} personnel
             </span>
-            <p className="text-slate-600 mt-0.5 leading-relaxed">
-              This analytics view is restricted to authenticated leadership. <strong>No public employee ranking or gamification leaderboards are permitted.</strong> All telemetry is aggregated to detect structural capacity overload and prevent burnout.
-            </p>
+          </div>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Click any employee row to open their complete 360° performance history, working stages, and evidence.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <span>Authorized Management Scope (No Public Employee Ranking)</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Featured Showcase Quick Links Banner */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Arjun Rao Featured Card */}
+        <div
+          onClick={() => openEmployeeProfile('EMP-1042')}
+          className="p-4 bg-white rounded-2xl border-2 border-blue-300/80 shadow-xs hover:border-blue-500 hover:shadow-md transition cursor-pointer group relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 bg-blue-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-bl-lg">
+            Featured 360° Profile
+          </div>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-blue-700 text-white flex items-center justify-center font-bold text-sm">
+              AR
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition flex items-center gap-1.5">
+                Arjun Rao
+                <ChevronRight className="w-4 h-4 text-blue-500 group-hover:translate-x-0.5 transition" />
+              </h4>
+              <span className="text-xs text-slate-500">Senior Developer · Integration Team</span>
+            </div>
+          </div>
+          <div className="flex justify-between items-center text-xs mt-3 pt-2 border-t border-slate-100">
+            <span className="text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+              Workload: 112% (Over capacity)
+            </span>
+            <span className="text-slate-600 font-mono font-medium">Overtime: +18%</span>
           </div>
         </div>
 
-        <button
-          onClick={handleExport}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-300 bg-white hover:bg-blue-50 text-blue-800 text-xs font-semibold shadow-sm transition-all shrink-0"
+        {/* Priya Sharma Featured Card */}
+        <div
+          onClick={() => openEmployeeProfile('EMP-1088')}
+          className="p-4 bg-white rounded-2xl border border-slate-200 hover:border-emerald-400 hover:shadow-md transition cursor-pointer group"
         >
-          <Download className="w-3.5 h-3.5" />
-          <span>Export Summary</span>
-        </button>
-      </div>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm">
+              PS
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition flex items-center gap-1.5">
+                Priya Sharma
+                <ChevronRight className="w-4 h-4 text-emerald-500 group-hover:translate-x-0.5 transition" />
+              </h4>
+              <span className="text-xs text-slate-500">QA Analyst · QA Team</span>
+            </div>
+          </div>
+          <div className="flex justify-between items-center text-xs mt-3 pt-2 border-t border-slate-100">
+            <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+              Workload: 82% (Available Buffer)
+            </span>
+            <span className="text-slate-600 font-mono font-medium">Quality: 96%</span>
+          </div>
+        </div>
 
-      {/* Aggregate Metric Banner */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-card text-center">
-          <span className="text-[10px] font-bold uppercase text-slate-400">Sample Population</span>
-          <span className="text-2xl font-black text-slate-900 block mt-1">{filteredEmployees.length} Members</span>
-          <span className="text-[10px] text-slate-500 font-medium">Across 5 specialized teams</span>
-        </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-card text-center">
-          <span className="text-[10px] font-bold uppercase text-slate-400">Avg Utilization</span>
-          <span className={`text-2xl font-black block mt-1 ${stats.avgUtil > 105 ? 'text-red-600' : stats.avgUtil > 95 ? 'text-amber-600' : 'text-slate-900'}`}>
-            {stats.avgUtil}%
-          </span>
-          <span className="text-[10px] text-slate-500 font-medium">Target: 80% - 90%</span>
-        </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-card text-center">
-          <span className="text-[10px] font-bold uppercase text-slate-400">Weekly Hours Logged</span>
-          <span className="text-2xl font-black text-slate-900 block mt-1">{stats.avgHours} hrs/wk</span>
-          <span className="text-[10px] text-slate-500 font-medium">+ {stats.avgOt}h average overtime</span>
-        </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-card text-center">
-          <span className="text-[10px] font-bold uppercase text-slate-400">Avg Quality Score</span>
-          <span className="text-2xl font-black text-slate-900 block mt-1">{stats.avgQuality}%</span>
-          <span className="text-[10px] text-slate-500 font-medium">Target standard: 90%+</span>
-        </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-card text-center">
-          <span className="text-[10px] font-bold uppercase text-slate-400">Engagement Index</span>
-          <span className={`text-2xl font-black block mt-1 ${stats.avgEng < 72 ? 'text-amber-600' : 'text-slate-900'}`}>
-            {stats.avgEng} / 100
-          </span>
-          <span className="text-[10px] text-slate-500 font-medium">Fatigue risk signal</span>
+        {/* Rahul Mehta Featured Card */}
+        <div
+          onClick={() => openEmployeeProfile('EMP-1095')}
+          className="p-4 bg-white rounded-2xl border border-slate-200 hover:border-amber-400 hover:shadow-md transition cursor-pointer group"
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-indigo-700 text-white flex items-center justify-center font-bold text-sm">
+              RM
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition flex items-center gap-1.5">
+                Rahul Mehta
+                <ChevronRight className="w-4 h-4 text-indigo-500 group-hover:translate-x-0.5 transition" />
+              </h4>
+              <span className="text-xs text-slate-500">Integration Engineer · Integration Team</span>
+            </div>
+          </div>
+          <div className="flex justify-between items-center text-xs mt-3 pt-2 border-t border-slate-100">
+            <span className="text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+              Workload: 104% (At Risk)
+            </span>
+            <span className="text-slate-600 font-mono font-medium">Overtime: +14%</span>
+          </div>
         </div>
       </div>
 
       {/* Filter Toolbar */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-card p-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Department Filter */}
-          <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-slate-400 font-semibold text-[11px] uppercase tracking-wider">Dept:</span>
-            <select
-              value={selectedDept}
-              onChange={e => setSelectedDept(e.target.value)}
-              className="bg-slate-50 border border-slate-200 text-slate-700 font-medium rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-brand-500 outline-none"
-            >
-              <option value="all">All Departments</option>
-              {departments.map(d => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
+          {/* Search */}
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search by employee name, role, or ID (e.g. Arjun, EMP-1042)..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
           </div>
+
+          {/* Department Filter */}
+          <select
+            value={selectedDept}
+            onChange={(e) => setSelectedDept(e.target.value)}
+            className="text-xs border border-slate-200 rounded-xl px-3 py-1.5 bg-slate-50 text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="all">All Departments</option>
+            {departments.map((d) => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
 
           {/* Team Filter */}
-          <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-slate-400 font-semibold text-[11px] uppercase tracking-wider">Team:</span>
-            <select
-              value={selectedTeam}
-              onChange={e => setSelectedTeam(e.target.value)}
-              className="bg-slate-50 border border-slate-200 text-slate-700 font-medium rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-brand-500 outline-none"
-            >
-              <option value="all">All Teams</option>
-              {teams.map(t => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Location Filter */}
-          <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-slate-400 font-semibold text-[11px] uppercase tracking-wider">Location:</span>
-            <select
-              value={selectedLocation}
-              onChange={e => setSelectedLocation(e.target.value)}
-              className="bg-slate-50 border border-slate-200 text-slate-700 font-medium rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-brand-500 outline-none"
-            >
-              <option value="all">All Locations</option>
-              {locations.map(l => (
-                <option key={l} value={l}>{l}</option>
-              ))}
-            </select>
-          </div>
+          <select
+            value={selectedTeam}
+            onChange={(e) => setSelectedTeam(e.target.value)}
+            className="text-xs border border-slate-200 rounded-xl px-3 py-1.5 bg-slate-50 text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="all">All Teams</option>
+            {teams.map((t) => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
         </div>
 
-        {/* Search Input */}
-        <div className="relative w-full sm:w-64">
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search role or member..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand-500"
-          />
+        <div className="text-xs text-slate-500 font-medium">
+          Showing <strong className="text-slate-800">{filteredEmployees.length}</strong> employees
         </div>
       </div>
 
-      {/* Workforce Roster Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-card overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-bold text-slate-900">Workforce Resource Telemetry</h3>
-            <p className="text-xs text-slate-500">
-              Aggregated work allocation metrics sorted by role profile.
-            </p>
-          </div>
-          <span className="text-xs font-semibold text-slate-400">
-            Showing {filteredEmployees.length} resources
-          </span>
-        </div>
-
+      {/* Main Complete Employee Directory Table */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="bg-slate-50 text-slate-600 font-bold text-[11px] uppercase tracking-wider border-b border-slate-200">
-                <th className="py-3 px-4">Member / Role</th>
-                <th className="py-3 px-4">Team</th>
-                <th className="py-3 px-4">Location</th>
-                <th className="py-3 px-4">Hours Assigned</th>
-                <th className="py-3 px-4">Capacity Utilization</th>
-                <th className="py-3 px-4">Overtime Logged</th>
-                <th className="py-3 px-4">Active Tasks</th>
-                <th className="py-3 px-4">Engagement Pulse</th>
+            <thead className="bg-slate-50/80 text-slate-600 font-bold uppercase tracking-wider border-b border-slate-200 select-none">
+              <tr>
+                <th className="py-3.5 px-4">Employee</th>
+                <th className="py-3.5 px-4">Role & Team</th>
+                <th className="py-3.5 px-4">Current Project</th>
+                <th className="py-3.5 px-4 text-right">Workload</th>
+                <th className="py-3.5 px-4 text-right">Productivity</th>
+                <th className="py-3.5 px-4 text-right">Quality</th>
+                <th className="py-3.5 px-4 text-right">SLA</th>
+                <th className="py-3.5 px-4 text-right">Overtime</th>
+                <th className="py-3.5 px-4 text-right">Engagement</th>
+                <th className="py-3.5 px-4 text-center">Status</th>
+                <th className="py-3.5 px-4 text-right">360° Profile</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredEmployees.map(emp => {
-                const team = teams.find(t => t.id === emp.teamId);
-                const isOverloaded = emp.utilizationPct >= 115;
-                const isWarning = emp.utilizationPct >= 100 && emp.utilizationPct < 115;
-
-                return (
-                  <tr key={emp.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-3 px-4">
-                      <div className="font-bold text-slate-900">{emp.name}</div>
-                      <div className="text-[11px] text-slate-500">{emp.role} • {emp.experienceYears}y exp</div>
-                    </td>
-
-                    <td className="py-3 px-4">
-                      <button
-                        onClick={() => navigateToTeam(emp.teamId)}
-                        className="inline-flex items-center gap-1.5 font-semibold text-brand-600 hover:text-brand-800"
-                      >
-                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: team?.color }}></span>
-                        <span>{team?.name}</span>
-                      </button>
-                    </td>
-
-                    <td className="py-3 px-4 text-slate-600 font-medium">
-                      {emp.location}
-                    </td>
-
-                    <td className="py-3 px-4 font-mono font-medium text-slate-800">
-                      {emp.assignedHoursWeekly}h / 40h
-                    </td>
-
-                    <td className="py-3 px-4">
-                      <span className={`inline-flex px-2 py-0.5 rounded text-xs font-mono font-bold ${
-                        isOverloaded
-                          ? 'bg-red-50 text-red-700 border border-red-200'
-                          : isWarning
-                          ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                          : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                      }`}>
-                        {emp.utilizationPct}%
-                      </span>
-                    </td>
-
-                    <td className="py-3 px-4 font-mono font-semibold text-slate-700">
-                      {emp.overtimeHoursWeekly > 0 ? (
-                        <span className="text-red-600 font-bold">+{emp.overtimeHoursWeekly}h</span>
-                      ) : (
-                        <span className="text-slate-400">0h</span>
-                      )}
-                    </td>
-
-                    <td className="py-3 px-4 text-slate-600 font-medium font-mono">
-                      {emp.tasksAssignedCount} tasks ({emp.tasksCompletedCount} done)
-                    </td>
-
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <span className={`font-mono font-bold text-xs ${emp.engagementIndex < 70 ? 'text-amber-600' : 'text-slate-800'}`}>
-                          {emp.engagementIndex}
-                        </span>
-                        <div className="w-16 bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${emp.engagementIndex < 70 ? 'bg-amber-500' : 'bg-emerald-500'}`}
-                            style={{ width: `${emp.engagementIndex}%` }}
-                          ></div>
-                        </div>
+              {filteredEmployees.map((emp) => (
+                <tr
+                  key={emp.id}
+                  onClick={() => openEmployeeProfile(emp.id)}
+                  className="hover:bg-blue-50/60 transition cursor-pointer group"
+                >
+                  {/* Employee Name & ID */}
+                  <td className="py-3 px-4">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-xs group-hover:bg-blue-600 group-hover:text-white transition">
+                        {emp.name
+                          .split(' ')
+                          .map((n) => n[0])
+                          .join('')}
                       </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                      <div>
+                        <div className="font-bold text-slate-900 group-hover:text-blue-700 transition">
+                          {emp.name}
+                        </div>
+                        <span className="font-mono text-[10px] text-slate-400">{emp.id}</span>
+                      </div>
+                    </div>
+                  </td>
+
+                  {/* Role & Team */}
+                  <td className="py-3 px-4">
+                    <div className="font-medium text-slate-800">{emp.role}</div>
+                    <span className="text-[11px] text-slate-500">{emp.teamName}</span>
+                  </td>
+
+                  {/* Current Project */}
+                  <td className="py-3 px-4 font-medium text-slate-700">
+                    {emp.project}
+                  </td>
+
+                  {/* Workload */}
+                  <td className="py-3 px-4 text-right font-mono font-bold">
+                    <span className={emp.workload > 110 ? 'text-red-600' : emp.workload > 100 ? 'text-amber-600' : 'text-slate-800'}>
+                      {emp.workload}%
+                    </span>
+                  </td>
+
+                  {/* Productivity */}
+                  <td className="py-3 px-4 text-right font-mono font-bold text-slate-800">
+                    {emp.productivity}
+                  </td>
+
+                  {/* Quality */}
+                  <td className="py-3 px-4 text-right font-mono font-bold text-emerald-700">
+                    {emp.quality}%
+                  </td>
+
+                  {/* SLA */}
+                  <td className="py-3 px-4 text-right font-mono text-slate-800">
+                    {emp.sla}%
+                  </td>
+
+                  {/* Overtime */}
+                  <td className="py-3 px-4 text-right font-mono font-bold">
+                    <span className={emp.overtime !== '0%' ? 'text-red-600' : 'text-slate-400'}>
+                      {emp.overtime}
+                    </span>
+                  </td>
+
+                  {/* Engagement */}
+                  <td className="py-3 px-4 text-right font-mono font-medium text-slate-800">
+                    {emp.engagement}
+                  </td>
+
+                  {/* Status */}
+                  <td className="py-3 px-4 text-center">
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border inline-block ${emp.statusColor}`}>
+                      {emp.status === 'At Risk' ? '⚠ At Risk' : '● Healthy'}
+                    </span>
+                  </td>
+
+                  {/* CTA */}
+                  <td className="py-3 px-4 text-right">
+                    <span className="text-blue-600 group-hover:text-blue-800 font-bold text-xs inline-flex items-center gap-1 group-hover:translate-x-0.5 transition">
+                      <span>View 360°</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </span>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

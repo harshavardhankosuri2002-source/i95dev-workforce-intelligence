@@ -184,3 +184,172 @@ export interface ConfigurableWeights {
   overtimeAlertThreshold: number;
   capacityAlertThreshold: number;
 }
+
+
+// ==========================================
+// EMPLOYEE 360° DOMAIN TYPES
+// ==========================================
+
+export type RoleViewMode = 'manager' | 'employee' | 'admin';
+
+export type TaskLifecycleStage =
+  | 'Assigned'
+  | 'Acknowledged'
+  | 'Started'
+  | 'In Progress'
+  | 'Blocked'
+  | 'Development'
+  | 'Review'
+  | 'Rework'
+  | 'Completed';
+
+export interface WorkingStageEvent {
+  stage: TaskLifecycleStage;
+  timestamp: string;
+  duration: string;
+  actor: string;
+  reason?: string;
+  comments?: string;
+  blocker?: string;
+  impact?: string;
+}
+
+export interface EmployeeTaskDetail {
+  id: string; // e.g. 'API-2841'
+  name: string;
+  projectId: string;
+  projectName: string;
+  type: 'Feature' | 'Bug Fix' | 'Integration' | 'Refactor' | 'Support';
+  priority: TaskPriority;
+  complexity: number; // 1-5 scale (e.g. 4/5)
+  assignedDate: string;
+  startedDate: string;
+  completedDate?: string;
+  expectedDurationHours: number;
+  actualDurationHours: number;
+  status: 'Completed' | 'In Progress' | 'Blocked' | 'Review';
+  slaStatus: 'Met' | 'Breached' | 'At Risk';
+  qualityPct: number;
+  reworkCycles: number;
+  dependencies: string;
+  delayAttribution: 'external_dependency' | 'employee_effort' | 'scope_creep' | 'none';
+  aiObservation: string;
+  workingStages: WorkingStageEvent[];
+}
+
+export interface EmployeeWorkJourneyItem {
+  id: string;
+  date: string;
+  timestamp: string;
+  type: 'start' | 'assign' | 'complete' | 'escalate' | 'blocked' | 'logout' | 'review' | 'rework';
+  title: string;
+  taskId?: string;
+  priority?: string;
+  complexity?: string;
+  resolutionTime?: string;
+  reason?: string;
+  overtime?: string;
+  details?: string;
+}
+
+export interface EmployeeProjectContribution {
+  projectId: string;
+  projectName: string;
+  contributionPct: number;
+  tasksTotal: number;
+  tasksCompleted: number;
+  slaAdherence: number;
+  qualityScore: number;
+  hoursSpent: number;
+  role: string;
+}
+
+export interface EmployeeMonthlyAttendance {
+  month: string;
+  workingDays: number;
+  leaveDays: number;
+  unplannedAbsences: number;
+  avgDailyHours: number;
+  overtimeHours: number;
+  lateStarts: number;
+  earlyExits: number;
+}
+
+export interface EmployeeTimelinePoint {
+  date: string;
+  productivity: number;
+  workload: number;
+  workingHours: number;
+  overtime: number;
+  taskCompletion: number;
+  quality: number;
+  slaAdherence: number;
+  tasksCompleted: number;
+  contextNote: string;
+}
+
+export interface Employee360Data {
+  id: string; // EMP-1042
+  name: string; // Arjun Rao
+  role: string; // Senior Software Engineer
+  department: string;
+  teamId: TeamId;
+  teamName: string;
+  avatarUrl?: string;
+  currentProject: string; // Project Alpha
+  status: 'At Risk' | 'Healthy' | 'Monitor';
+  workloadRiskScore: number; // 82 (82/100, High workload risk)
+  workloadRiskLabel: string; // 'High workload risk'
+  
+  // KPI Summary
+  productivityIndex: number; // 84
+  productivityTrendPct: number; // -6
+  capacityUtilization: number; // 112
+  capacityStatus: string; // 'Over capacity'
+  qualityScore: number; // 91
+  qualityTrendPct: number; // +2
+  taskCompletionRate: number; // 87
+  taskCompletionTrendPct: number; // -5
+  slaAdherence: number; // 94
+  overtimePct: number; // 18 (+18%)
+  overtimeHoursMonthly: number; // 24
+  absenteeismRate: number; // 2.1%
+  engagementScore: number; // 72
+  engagementPreviousScore: number; // 77
+  engagementDelta: number; // -5
+  
+  // Workload specs
+  assignedHoursWeekly: number; // 42
+  availableCapacityWeekly: number; // 37.5
+  activeTasksCount: number; // 8
+  highPriorityTasks: number; // 3
+  mediumPriorityTasks: number; // 4
+  lowPriorityTasks: number; // 1
+  projectWorkloadDistribution: { name: string; percentage: number; color: string }[];
+
+  // Timeframes & Collections
+  timelinePoints: EmployeeTimelinePoint[];
+  workJourney: EmployeeWorkJourneyItem[];
+  tasks: EmployeeTaskDetail[];
+  projects: EmployeeProjectContribution[];
+  attendance: EmployeeMonthlyAttendance[];
+  
+  // Collaboration & Dependencies
+  dependenciesBlockedBy: { name: string; count: number; description: string }[];
+  collaborationCounts: { handoffs: number; reviews: number; escalations: number; crossTeamTasks: number };
+
+  // AI Narrative & Recommendations
+  aiExplanation: {
+    summary: string;
+    conclusion: string;
+    confidence: number;
+    externalDependencyDelayedCount: number;
+  };
+  aiRecommendations: {
+    id: string;
+    title: string;
+    action: string;
+    category: 'Workload' | 'Workflow' | 'Dependency' | 'Policy';
+    impact: string;
+  }[];
+}
